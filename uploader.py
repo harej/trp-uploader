@@ -8,6 +8,7 @@ import requests
 import sys
 
 VERBOSE = False
+PORTAL = 'https://siasky.net'
 
 def print_if_verbose(content):
     if VERBOSE == True:
@@ -32,7 +33,7 @@ def generate_seed():
 # Accepts filename, returns skylink
 def upload_to_skynet(file):
     r = requests.post(
-            'https://siasky.net/skynet/skyfile/trp-index.jsonl',
+            PORTAL + '/skynet/skyfile/trp-index.jsonl',
             files={'file': open(file, 'rb')})
     response = r.json()
     try:
