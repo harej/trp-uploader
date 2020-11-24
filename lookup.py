@@ -85,4 +85,4 @@ if __name__ == '__main__':
     elif verb == 'graph':
         process_and_print(get_graph(arg[2], arg[3]))
     else:
-        print('Verb not recognized. Use: triple, index, registry, graph')
+        print('Verb not recognized. Use: triple, graph, index, registry')

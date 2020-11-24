@@ -47,7 +47,7 @@ In the future, datasets can be uploaded through updates to the Skynet Registry, 
 
 #### Look up based on triple pattern
 
-`python3 lookup.py (public key) (subject) (predicate) (object)`
+`python3 lookup.py triple (public key) (subject) (predicate) (object)`
 
 The *public key* is produced during the process described above, and it is used to distinguish datasets from others. The *subject*, *predicate*, and *object* are RDF terms, including URIs such as `<https://www.wikidata.org/entity/Q55654897>`, string literals such as `"This"`, numbers, etc. For variables, use a question mark followed by text like `?this`. For command line use, wrap each term in quotation marks.
 
@@ -58,3 +58,16 @@ $ python3 lookup.py triple 062572f5766e35b556e66a2f0920a615f68e3897727cbe5d4f56b
 
 <http://james/daisy> <http://james/instanceOf> <http://james/cat>
 ```
+
+#### Look up graph for a given term
+
+`python lookup.py graph (public key) (term)`
+
+Constructs a graph based on the appearance of the given term as a subject, predicate, *or* object.
+
+Example:
+````
+$ python3 lookup.py graph 062572f5766e35b556e66a2f0920a615f68e3897727cbe5d4f56bc8e7da5c545 "<http://james/cat>"                                                 
+<http://james/daisy> <http://james/instanceOf> <http://james/cat>
+<http://james/cat> <http://james/instanceOf> <http://james/mammal>
+````
