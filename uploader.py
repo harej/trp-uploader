@@ -1,5 +1,6 @@
 from vendor.skydb import skydb
 from vendor.passphrase.passphrase import Passphrase
+from multiprocessing.dummy import Pool
 from pprint import pprint
 import json
 import os
@@ -45,6 +46,11 @@ def upload_to_skynet(file):
     print_if_verbose(skylink)
     return skylink
 
+
+# Accepts filename of the locator output ("trp-locator.txt"), returns dict
+def restore_from_file(filename):
+    with open(filename) as f:
+        return json.load(f)
 
 # Accepts filename as input, returns list of files generated
 def create_index(filename, outputdir):
@@ -111,37 +117,90 @@ def create_index(filename, outputdir):
     return index_name_to_file_and_line
 
 
-def update_registry(index_name, skylink, linenumber, pk, sk):
+def update_registry(argtuple):
+    index_name = argtuple[0]
+    skylink = argtuple[1]
+    linenumber = argtuple[2]
+    pk = argtuple[3]
+    sk = argtuple[4]
+
     revision = 0  # TODO: Allow for updates by checking latest rev number
     data_key = 'trp:' + index_name
     data_value = skylink + '#L' + str(linenumber)
 
     entry = skydb.RegistryEntry(pk, sk)
-    entry.set_entry(data_key=data_key, data=data_value, revision=revision)
-    
-    data_value, revision = entry.get_entry(data_key=data_key)
-    print_if_verbose(data_key + '\t' + data_value + '\t' + str(revision))
+    try:
+        entry.set_entry(data_key=data_key, data=data_value, revision=revision)
+        data_value, revision = entry.get_entry(data_key=data_key)
+        print_if_verbose(data_key + '\t' + data_value + '\t' + str(revision))
+    except:
+        print(f'Failed: {data_key}')
+        raise Exception
     return (pk, data_key, data_value, revision)
 
 
 if __name__ == '__main__':
+    verb = sys.argv[1]
+    fileparam = sys.argv[2]
+    outputdir = sys.argv[3]
+    try:
+        credentials = sys.argv[4]
+    except:
+        credentials = None
+    try:
+        alreadydone = sys.argv[5]
+    except:
+        alreadydone = None
+    filelocator = None
+    locator = None
     VERBOSE = True
-    filelocator = create_index(sys.argv[1], sys.argv[2])
-    locator = {}
-    filename_to_skylink = {}
+
+    if verb == 'create':
+        filelocator = create_index(fileparam, outputdir)  # also accepts URL
+        with open(os.path.join(outputdir, 'trp-filelocator.txt'), 'w') as f:
+            json.dump(filelocator, f)
+    elif verb == 'loadfiles':
+        filelocator = restore_from_file(fileparam)
+    elif verb == 'loadskylinks':
+        locator = restore_from_file(fileparam)
+    else:
+        raise Exception('Verb not recognized. Use create, loadfiles, loadskylinks.')
     
-    for index_name, pair in filelocator.items():
-        filename = os.path.join(sys.argv[2], to_filename(pair[0]))
-        if filename not in filename_to_skylink:
-            print_if_verbose(filename)
-            filename_to_skylink[filename] = upload_to_skynet(filename)
-        locator[index_name] = (filename_to_skylink[filename], pair[1])
+    filename_to_skylink = {}
+    if locator is None:
+        locator = {}
+        for index_name, pair in filelocator.items():
+            filename = os.path.join(outputdir, to_filename(pair[0]))
+            if filename not in filename_to_skylink:
+                print_if_verbose(filename)
+                filename_to_skylink[filename] = upload_to_skynet(filename)
+            locator[index_name] = (filename_to_skylink[filename], pair[1], filename)
 
-    seed = generate_seed()
-    pk, sk = skydb.crypto.genKeyPairFromSeed(seed)
-    print_if_verbose('Seed – KEEP PRIVATE\n' + seed)
-    print_if_verbose('Secret Key – KEEP PRIVATE\n' + sk.hex())
-    print_if_verbose('Public Key\n' + pk.hex())
+        with open(os.path.join(outputdir, 'trp-skylinks.txt'), 'w') as f:
+            json.dump(locator, f)
 
-    for index_name, pair in locator.items():
-        returntuple = update_registry(index_name, pair[0], pair[1], pk, sk)
+    if credentials is None:
+        seed = generate_seed()
+        pk, sk = skydb.crypto.genKeyPairFromSeed(seed)
+        print_if_verbose('Seed – KEEP PRIVATE\n' + seed)
+        print_if_verbose('Secret Key – KEEP PRIVATE\n' + sk.hex())
+        print_if_verbose('Public Key\n' + pk.hex())
+        with open(os.path.join(outputdir, 'trp-keys.txt'), 'w') as f:
+            json.dump({'pk': pk.hex(), 'sk': sk.hex(), 'seed': seed}, f)
+    else:
+        credentials = restore_from_file(credentials)
+        pk = bytes.fromhex(credentials['pk'])
+        sk = bytes.fromhex(credentials['sk'])
+
+
+    do_not_lookup = []
+    if alreadydone is not None:
+        with open(alreadydone) as f:
+            for line in f:
+                do_not_lookup.append(line.replace('trp:', '').replace('\n', '').strip())
+
+    with Pool(5) as pool:
+        to_update = [(index_name, tup[0], tup[1], pk, sk)
+                 for index_name, tup in locator.items()
+                 if index_name not in do_not_lookup]
+        results = pool.map(update_registry, to_update)
