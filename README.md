@@ -4,6 +4,8 @@ The `trp-uploader` software package is a basic Python utility that lets you prep
 
 This is very new and experimental and might be rough around the edges.
 
+Demo video: https://siasky.net/AABEnDFEHOhug47LXgbzQXu1GsYTPKJXRum9kKMOJLH28g
+
 ## Introduction
 RDF is a simple format for expressing structured data, consisting of statements with three words: a subject, a predicate, and an object. The value of each word can be a URI, a universal identifier for resources that may resolve to an online resource as well (but is not required to). For example, if you had a namespace `<http://cooldata>`, the statement "the capital of Mississippi is Jackson" could be expressed as `<http://cooldata/Mississippi> <http://cooldata/hasCapital> <http://cooldata/JacksonMissisippi> .`, with each of those URIs referring to different concepts. RDF is a standard for expressing data in graph databases, where connections are drawn between related concepts. It is an appealing format because it is simple, it is schemaless, and it facilitates interoperability between datasets through the use of common URIs and the mapping together of distinct URIs through [semantic matching](https://en.wikipedia.org/wiki/Semantic_matching).
 
