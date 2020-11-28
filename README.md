@@ -37,7 +37,7 @@ The `trp-uploader` is the first phase of the project, facilitating upload and (s
 
 #### Create indexes from datasets and upload to Skynet
 
-`python3 uploader.py (data file) (output dir for index files)`
+`python3 uploader.py create (data file) (output dir for index files)`
 
 The *data file* is an RDF file (XML, JSON-LD, NT, Turtle, etc. accepted). It will guess what file type it is based on the file extension. Gzipped files should not be used for now. You can also specify a URL to a dataset in lieu of a local file path.
 
